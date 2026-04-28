@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#FF6B35" />
+  <meta name="description" content="MealMind – Your personal family meal planner. Plan your week, get grocery lists, and watch how to cook every dish." />
+  <title>MealMind – Family Meal Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+
+  <!-- React & Babel via CDN — zero install needed -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #FFF8F0;
+      font-family: 'Nunito', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    #root { min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ─── MEAL DATABASE ─────────────────────────────────────────────────────────
+    const MEAL_DB = {
+      breakfast: [
+        { id:"b1",  name:"Buttermilk Pancakes",    emoji:"🥞", cuisine:"american",     time:20, cal:420, tags:["vegetarian"], grocery:["2 cups all-purpose flour","2 tbsp sugar","2 tsp baking powder","1/2 tsp salt","2 eggs","1.5 cups buttermilk","3 tbsp melted butter","maple syrup","butter for serving"] },
+        { id:"b2",  name:"Bacon & Egg Scramble",   emoji:"🍳", cuisine:"american",     time:15, cal:480, tags:[], grocery:["6 strips bacon","4 eggs","1 bell pepper diced","1/2 onion diced","2 tbsp butter","salt & pepper","2 slices toast","hot sauce (optional)"] },
+        { id:"b3",  name:"French Toast Casserole", emoji:"🍞", cuisine:"american",     time:35, cal:510, tags:["vegetarian"], grocery:["1 loaf brioche bread","4 eggs","1.5 cups whole milk","2 tsp vanilla extract","1 tsp cinnamon","3 tbsp brown sugar","powdered sugar for topping","1 cup mixed berries"] },
+        { id:"b4",  name:"Shrimp & Grits",         emoji:"🍤", cuisine:"soul",         time:30, cal:560, tags:["gluten-free"], grocery:["1 lb large shrimp peeled & deveined","1 cup stone-ground grits","2 cups chicken broth","1 cup whole milk","1/2 cup shredded cheddar","3 cloves garlic","4 scallions","2 strips bacon","1 tbsp Cajun seasoning","2 tbsp butter","salt & pepper"] },
+        { id:"b5",  name:"Salmon Croquettes",      emoji:"🐟", cuisine:"soul",         time:25, cal:390, tags:[], grocery:["2 cans (14oz) pink salmon","1 egg","1/4 cup all-purpose flour","1/2 onion finely diced","1/2 bell pepper diced","1 tsp garlic powder","1 tsp Old Bay seasoning","vegetable oil for frying","hot sauce for serving"] },
+        { id:"b6",  name:"Biscuits & Gravy",       emoji:"🫓", cuisine:"soul",         time:40, cal:580, tags:["vegetarian"], grocery:["2 cups self-rising flour","1/2 cup cold butter cubed","3/4 cup buttermilk","1/2 lb breakfast sausage","3 tbsp all-purpose flour","2 cups whole milk","salt & black pepper to taste","4 eggs for scrambling"] },
+        { id:"b7",  name:"Ackee & Saltfish",       emoji:"🌺", cuisine:"caribbean",    time:30, cal:440, tags:["gluten-free"], grocery:["1 can ackee (19oz) drained","1/2 lb saltfish (salt cod) soaked overnight","1 tomato diced","3 scallions sliced","1/2 onion sliced","1 scotch bonnet pepper","2 tbsp vegetable oil","fresh thyme sprigs","black pepper to taste"] },
+        { id:"b8",  name:"Cornmeal Porridge",      emoji:"🥣", cuisine:"caribbean",    time:20, cal:310, tags:["vegan","gluten-free"], grocery:["1 cup fine yellow cornmeal","3 cups water","1 can (14oz) coconut milk","2 tbsp brown sugar","1/2 tsp vanilla extract","1/4 tsp cinnamon","1/4 tsp nutmeg","pinch of salt","banana or mango for serving"] },
+        { id:"b9",  name:"Shakshuka",              emoji:"🍅", cuisine:"mediterranean", time:25, cal:360, tags:["vegetarian","gluten-free"], grocery:["1 can (28oz) crushed tomatoes","4 large eggs","1 red bell pepper diced","1 onion diced","4 cloves garlic minced","1 tsp ground cumin","1 tsp paprika","1/2 tsp chili flakes","2 tbsp olive oil","1/4 cup crumbled feta","fresh parsley","crusty bread for dipping"] },
+        { id:"b10", name:"Avocado Feta Toast",     emoji:"🥑", cuisine:"mediterranean", time:10, cal:340, tags:["vegetarian"], grocery:["2 ripe avocados","4 slices sourdough bread","1/2 cup crumbled feta cheese","1 cup cherry tomatoes halved","1/2 English cucumber sliced","2 tbsp extra virgin olive oil","1 lemon for juice","red pepper flakes","salt & black pepper","fresh basil leaves"] },
+        { id:"b11", name:"Greek Yogurt Bowl",      emoji:"🫙", cuisine:"mediterranean", time:5,  cal:290, tags:["vegetarian","gluten-free"], grocery:["2 cups full-fat Greek yogurt","2 tbsp honey","1/2 cup granola","1/2 cup fresh blueberries","1/2 cup strawberries sliced","2 tbsp chopped walnuts","1 tsp chia seeds"] },
+        { id:"b12", name:"Huevos Rancheros",       emoji:"🌮", cuisine:"mexican",      time:20, cal:450, tags:["vegetarian","gluten-free"], grocery:["4 corn tortillas","4 large eggs","1 can (15oz) black beans","1 can (14oz) diced tomatoes","1 jalapeño diced","1/2 onion diced","2 cloves garlic","1 tsp cumin","2 tbsp vegetable oil","1 avocado","sour cream","fresh cilantro","lime wedges"] },
+        { id:"b13", name:"Chorizo Breakfast Tacos",emoji:"🌯", cuisine:"mexican",      time:20, cal:520, tags:[], grocery:["1/2 lb Mexican chorizo","4 large eggs","6 small corn tortillas","1/2 onion diced","2 scallions sliced","1/2 cup shredded Mexican cheese blend","1/2 cup salsa verde","sour cream for serving","fresh cilantro","lime wedges"] },
+        { id:"b14", name:"Veggie Frittata",        emoji:"🍳", cuisine:"italian",      time:30, cal:380, tags:["vegetarian","gluten-free"], grocery:["6 large eggs","1 zucchini thinly sliced","2 cups baby spinach","1 cup cherry tomatoes halved","1/2 onion diced","1/2 cup shredded mozzarella","2 tbsp olive oil","fresh basil","salt & pepper","crusty Italian bread"] },
+        { id:"b15", name:"Congee with Toppings",   emoji:"🍚", cuisine:"asian",        time:45, cal:320, tags:["gluten-free"], grocery:["1 cup jasmine rice","6 cups chicken broth","2 cups shredded rotisserie chicken","2 soft-boiled eggs","2 scallions sliced","1 inch fresh ginger grated","2 tbsp soy sauce","1 tsp sesame oil","crispy shallots for topping","white pepper"] },
+        { id:"b16", name:"Veggie Fried Rice",      emoji:"🥚", cuisine:"asian",        time:20, cal:410, tags:["vegetarian"], grocery:["3 cups cooked day-old jasmine rice","3 large eggs","1 cup frozen peas","1 cup diced carrots","1 cup corn kernels","3 scallions","3 cloves garlic","2 tbsp soy sauce","1 tbsp oyster sauce","1 tsp sesame oil","2 tbsp vegetable oil"] },
+        { id:"b17", name:"Masala Omelette",        emoji:"🍳", cuisine:"indian",       time:12, cal:300, tags:["vegetarian","gluten-free"], grocery:["3 large eggs","1/2 onion finely diced","1 tomato finely diced","1 green chili finely diced","fresh cilantro chopped","1/2 tsp turmeric","1/2 tsp cumin seeds","salt to taste","1 tbsp vegetable oil","2 slices bread for serving"] },
+        { id:"b18", name:"Aloo Paratha",           emoji:"🫓", cuisine:"indian",       time:35, cal:460, tags:["vegetarian"], grocery:["2 cups whole wheat flour","3 medium potatoes boiled and mashed","1/2 onion finely diced","1 green chili finely diced","1 tsp garam masala","1/2 tsp cumin","fresh cilantro","salt","butter for cooking","plain yogurt for serving","mango pickle"] },
+      ],
+      lunch: [
+        { id:"l1",  name:"Fried Chicken Sandwich", emoji:"🍗", cuisine:"soul",         time:35, cal:680, tags:[], grocery:["4 boneless chicken thighs","2 cups buttermilk for marinating","2 cups all-purpose flour","1 tbsp paprika","1 tsp cayenne pepper","1 tsp garlic powder","vegetable oil for frying","4 brioche buns","1/4 head cabbage shredded","1 cup shredded carrots","1/2 cup mayonnaise","2 tbsp apple cider vinegar","lettuce leaves","2 tomatoes sliced","pickle slices","hot sauce"] },
+        { id:"l2",  name:"Smothered Pork Chops",   emoji:"🥩", cuisine:"soul",         time:45, cal:620, tags:["gluten-free"], grocery:["4 bone-in pork chops","2 large onions sliced","4 cloves garlic","2 cups chicken broth","1/2 cup all-purpose flour","1 tsp dried thyme","1 tsp garlic powder","2 tbsp vegetable oil","salt & pepper","4 potatoes","4 tbsp butter","1/2 cup warm milk","1 lb fresh green beans"] },
+        { id:"l3",  name:"Catfish Po'Boy",          emoji:"🐟", cuisine:"soul",         time:30, cal:590, tags:[], grocery:["4 catfish fillets","1 cup yellow cornmeal","1/2 cup all-purpose flour","1 tbsp Cajun seasoning","2 large eggs","vegetable oil for frying","4 hoagie rolls","2 tbsp mayonnaise","1 tbsp Creole mustard","1 tsp hot sauce","shredded lettuce","2 tomatoes sliced","pickle slices"] },
+        { id:"l4",  name:"Jerk Chicken Bowl",       emoji:"🌴", cuisine:"caribbean",    time:40, cal:580, tags:["gluten-free"], grocery:["6 chicken thighs bone-in","3 tbsp jerk seasoning","2 scallions","3 cloves garlic","1 scotch bonnet pepper","2 tbsp soy sauce","2 tbsp vegetable oil","2 cups long-grain rice","1 can (14oz) coconut milk","1 can (15oz) kidney beans","2 ripe plantains","fresh thyme sprigs"] },
+        { id:"l5",  name:"Curry Goat",              emoji:"🍲", cuisine:"caribbean",    time:120,cal:640, tags:["gluten-free"], grocery:["2 lbs goat meat cubed","2 tbsp Jamaican curry powder","1 onion diced","4 cloves garlic","1 scotch bonnet pepper","3 potatoes cubed","1 can (14oz) coconut milk","2 cups beef broth","fresh thyme sprigs","4 scallions","2 tbsp vegetable oil","2 cups white rice","roti or naan for serving"] },
+        { id:"l6",  name:"Stewed Fish & Bammy",     emoji:"🐠", cuisine:"caribbean",    time:35, cal:490, tags:["gluten-free"], grocery:["2 lbs snapper or cod fillets","1 can (14oz) diced tomatoes","1 onion sliced","1 bell pepper sliced","3 cloves garlic","1 scotch bonnet pepper","2 tbsp soy sauce","fresh thyme","whole allspice berries","2 tbsp vegetable oil","2 bammy cakes (frozen section)"] },
+        { id:"l7",  name:"Grilled Chicken Gyro",    emoji:"🫔", cuisine:"mediterranean", time:30, cal:520, tags:[], grocery:["4 chicken breasts","4 pita breads","2 tbsp olive oil","1 tbsp dried oregano","1 tsp garlic powder","1 tsp paprika","1 English cucumber","2 tomatoes diced","1 red onion sliced","1 cup full-fat Greek yogurt","2 cloves garlic","fresh dill","1 lemon","crumbled feta cheese"] },
+        { id:"l8",  name:"Lamb Kofta Bowl",          emoji:"🍖", cuisine:"mediterranean", time:35, cal:560, tags:["gluten-free"], grocery:["1.5 lbs ground lamb","1 onion grated","3 cloves garlic minced","1 tsp ground cumin","1 tsp ground coriander","1 tsp cinnamon","fresh parsley chopped","1 cup store-bought hummus","2 tomatoes diced","1 cucumber diced","1 cup cooked white rice","pita bread","tzatziki sauce","1 lemon"] },
+        { id:"l9",  name:"Falafel Wrap",             emoji:"🌯", cuisine:"mediterranean", time:30, cal:480, tags:["vegan"], grocery:["2 cans (15oz) chickpeas drained & dried","1/2 onion roughly chopped","3 cloves garlic","1/4 cup fresh parsley","1/4 cup fresh cilantro","1 tsp ground cumin","1 tsp ground coriander","vegetable oil for frying","4 large pita breads","1/4 cup tahini","1 lemon","2 tomatoes","1 cucumber","romaine lettuce"] },
+        { id:"l10", name:"Greek Salmon Salad",       emoji:"🐟", cuisine:"mediterranean", time:25, cal:450, tags:["gluten-free"], grocery:["4 salmon fillets","2 large tomatoes chopped","1 English cucumber chopped","1/2 red onion thinly sliced","1 cup Kalamata olives pitted","1 cup crumbled feta cheese","3 tbsp extra virgin olive oil","1 lemon","1 tsp dried oregano","salt & pepper"] },
+        { id:"l11", name:"Carne Asada Tacos",        emoji:"🌮", cuisine:"mexican",      time:30, cal:550, tags:["gluten-free"], grocery:["1.5 lbs skirt steak","1 orange juiced","2 limes juiced","4 cloves garlic minced","1 tsp ground cumin","1 tsp chili powder","2 tbsp soy sauce","8 small corn tortillas","1 white onion finely diced","fresh cilantro","2 ripe avocados","1 jalapeño","2 limes for serving","salsa verde"] },
+        { id:"l12", name:"Chicken Pozole",           emoji:"🍲", cuisine:"mexican",      time:50, cal:430, tags:["gluten-free"], grocery:["2 chicken breasts","1 can (25oz) hominy drained","1 can (14oz) diced tomatoes","1 onion quartered","4 cloves garlic","2 dried ancho chilies","1 tsp dried oregano","4 cups chicken broth","2 cups green cabbage shredded","4 radishes thinly sliced","2 limes","tostada shells for serving"] },
+        { id:"l13", name:"Chicken Parm Sandwich",    emoji:"🥪", cuisine:"italian",      time:35, cal:680, tags:[], grocery:["4 chicken breasts pounded thin","2 large eggs beaten","1 cup Italian breadcrumbs","1/2 cup grated Parmesan","1 jar (24oz) marinara sauce","8 oz fresh mozzarella sliced","4 ciabatta rolls","2 tbsp olive oil","vegetable oil for frying","fresh basil leaves","salt & pepper"] },
+        { id:"l14", name:"Tuscan White Bean Soup",   emoji:"🍲", cuisine:"italian",      time:35, cal:380, tags:["vegan","gluten-free"], grocery:["2 cans (15oz) cannellini beans drained","1 can (14oz) diced tomatoes","4 cups vegetable broth","2 cups baby spinach","3 celery stalks diced","2 carrots diced","1 onion diced","4 cloves garlic","1 tsp fresh rosemary","2 tbsp olive oil","Parmesan rind (optional)","crusty Italian bread"] },
+        { id:"l15", name:"Teriyaki Chicken Bowl",    emoji:"🍗", cuisine:"asian",        time:25, cal:520, tags:[], grocery:["4 boneless chicken thighs","1/4 cup soy sauce","2 tbsp honey","1 tbsp mirin","1 tsp sesame oil","2 cloves garlic","1 tsp fresh ginger grated","2 cups broccoli florets","1 cup frozen edamame thawed","2 carrots julienned","2 cups cooked jasmine rice","sesame seeds for garnish","3 scallions sliced"] },
+        { id:"l16", name:"Beef & Broccoli",          emoji:"🥩", cuisine:"asian",        time:25, cal:490, tags:[], grocery:["1.5 lbs flank steak thinly sliced","4 cups broccoli florets","3 cloves garlic minced","1 inch fresh ginger grated","1/3 cup soy sauce","2 tbsp oyster sauce","1 tbsp brown sugar","1 tsp sesame oil","2 tbsp cornstarch","2 tbsp vegetable oil","2 cups cooked jasmine rice","sesame seeds for garnish"] },
+        { id:"l17", name:"Pho Noodle Soup",          emoji:"🍜", cuisine:"asian",        time:60, cal:410, tags:[], grocery:["1 lb beef sirloin thinly sliced","8 cups beef broth","1 large onion halved and charred","3 inch piece fresh ginger charred","3 star anise pods","1 cinnamon stick","12 oz flat rice noodles","2 cups bean sprouts","4 scallions sliced","fresh cilantro","fresh Thai basil","2 limes","hoisin sauce","sriracha sauce","fish sauce"] },
+        { id:"l18", name:"Butter Chicken",           emoji:"🍛", cuisine:"indian",       time:45, cal:580, tags:["gluten-free"], grocery:["2 lbs chicken breast cubed","1 can (14oz) crushed tomatoes","1 can (14oz) coconut cream","1 onion diced","4 cloves garlic minced","1 inch fresh ginger grated","2 tbsp unsalted butter","1 tbsp garam masala","1 tsp turmeric","1 tsp ground cumin","1 tsp ground coriander","1 tsp paprika","fresh cilantro","2 cups basmati rice","naan bread"] },
+        { id:"l19", name:"Chana Masala",             emoji:"🫘", cuisine:"indian",       time:35, cal:420, tags:["vegan","gluten-free"], grocery:["2 cans (15oz) chickpeas drained","1 can (14oz) crushed tomatoes","2 cups baby spinach","1 large onion diced","4 cloves garlic minced","1 inch fresh ginger grated","2 tsp garam masala","1 tsp cumin seeds","1 tsp turmeric","1 tsp ground coriander","2 tbsp vegetable oil","fresh cilantro","2 cups basmati rice","naan or roti"] },
+      ],
+      dinner: [
+        { id:"d1",  name:"Oxtail Stew",             emoji:"🥘", cuisine:"soul",         time:180,cal:720, tags:["gluten-free"], grocery:["3 lbs oxtail cleaned","1 can (14oz) diced tomatoes","2 carrots roughly chopped","3 potatoes cubed","1 large onion diced","4 cloves garlic","1 scotch bonnet pepper","2 tbsp soy sauce","2 tbsp brown sugar","1 tbsp ground allspice","2 cups beef broth","fresh thyme","2 tbsp vegetable oil","3 cups white rice"] },
+        { id:"d2",  name:"BBQ Baby Back Ribs",      emoji:"🍖", cuisine:"soul",         time:180,cal:820, tags:["gluten-free"], grocery:["2 full racks baby back ribs","2 tbsp brown sugar","1 tbsp smoked paprika","1 tbsp garlic powder","1 tbsp onion powder","1 tsp cayenne pepper","1 cup BBQ sauce","2 cups elbow macaroni","2 cups sharp cheddar shredded","1 cup whole milk","2 tbsp butter","1 lb fresh collard greens","1/4 lb smoked turkey leg","1 box Jiffy cornbread mix","1 egg","1/3 cup milk for cornbread"] },
+        { id:"d3",  name:"Fried Catfish & Hush Puppies", emoji:"🐟", cuisine:"soul",   time:40, cal:650, tags:[], grocery:["4 large catfish fillets","1 cup yellow cornmeal","1/2 cup all-purpose flour","1 tbsp Cajun seasoning","2 large eggs","vegetable oil for frying","1 cup cornmeal for hush puppies","1/2 cup all-purpose flour","1 large egg","1/2 cup buttermilk","1/4 cup yellow onion diced","1/2 tsp baking powder","coleslaw mix bag","1/2 cup mayonnaise","2 tbsp apple cider vinegar"] },
+        { id:"d4",  name:"Braised Short Ribs",      emoji:"🥩", cuisine:"soul",         time:200,cal:780, tags:["gluten-free"], grocery:["4 lbs beef short ribs","2 cups dry red wine","2 cups beef broth","3 carrots roughly chopped","3 celery stalks","1 large onion diced","4 cloves garlic","2 tbsp tomato paste","fresh thyme & rosemary","2 tbsp olive oil","5 large potatoes","1/2 cup warm heavy cream","4 tbsp unsalted butter","1 lb fresh asparagus"] },
+        { id:"d5",  name:"Jerk Pork & Festival",    emoji:"🌴", cuisine:"caribbean",    time:90, cal:710, tags:["gluten-free"], grocery:["3 lbs pork shoulder","4 tbsp jerk seasoning paste","4 scallions","4 cloves garlic","1 scotch bonnet","2 tbsp soy sauce","2 tbsp brown sugar","1 tsp whole allspice","1 cup long-grain rice","1 can (14oz) coconut milk","1 can (15oz) kidney beans","2 ripe plantains","vegetable oil","2 cups all-purpose flour","1 tsp baking powder","1 tsp sugar","1/4 cup fine cornmeal"] },
+        { id:"d6",  name:"Pepper Pot Soup",         emoji:"🍲", cuisine:"caribbean",    time:90, cal:520, tags:["gluten-free"], grocery:["1 lb stew beef cubed","1/2 lb pork cubed","2 cups fresh spinach or callaloo","1 lb cassava peeled and cubed","2 potatoes cubed","1 can (14oz) coconut milk","1 scotch bonnet","1 onion diced","3 cloves garlic","fresh thyme","whole allspice","1 cinnamon stick","4 cups beef broth","1.5 cups all-purpose flour for dumplings","2 tbsp butter"] },
+        { id:"d7",  name:"Caribbean Curry Chicken", emoji:"🍛", cuisine:"caribbean",    time:60, cal:590, tags:["gluten-free"], grocery:["3 lbs chicken pieces bone-in","3 tbsp Jamaican curry powder","2 potatoes cubed","1 large onion diced","4 cloves garlic","1 scotch bonnet","1 cup coconut milk","2 cups chicken broth","fresh thyme sprigs","1 tbsp vegetable oil","salt & pepper","3 cups white rice","store-bought roti for serving"] },
+        { id:"d8",  name:"Lamb Chops & Roasted Veg",emoji:"🍖", cuisine:"mediterranean", time:45, cal:680, tags:["gluten-free"], grocery:["8 lamb loin chops","2 zucchini sliced","2 bell peppers sliced","1 large eggplant cubed","1 cup cherry tomatoes","4 tbsp olive oil","3 cloves garlic","1 tbsp fresh rosemary","1 tbsp fresh thyme","1.5 cups couscous","2 cups chicken broth","1 cup Greek yogurt","fresh mint leaves","1 lemon","salt & pepper"] },
+        { id:"d9",  name:"Baked Salmon Orzo",       emoji:"🐟", cuisine:"mediterranean", time:35, cal:580, tags:["gluten-free"], grocery:["4 salmon fillets","2 cups orzo pasta","3 cups chicken broth","2 cups baby spinach","1 cup cherry tomatoes halved","1/2 cup Kalamata olives pitted","3 cloves garlic","2 tbsp extra virgin olive oil","1/2 cup crumbled feta cheese","1 lemon","fresh dill","fresh parsley","salt & pepper"] },
+        { id:"d10", name:"Moussaka",                emoji:"🫕", cuisine:"mediterranean", time:90, cal:620, tags:[], grocery:["1 lb ground beef","1/2 lb ground lamb","2 large eggplants sliced","1 can (28oz) crushed tomatoes","1 large onion diced","4 cloves garlic","1 tsp cinnamon","1 tsp allspice","2 cups whole milk","3 tbsp all-purpose flour","3 tbsp butter","2 large eggs","1/2 cup grated Parmesan","3 tbsp olive oil","salt & pepper","fresh flat-leaf parsley"] },
+        { id:"d11", name:"Chicken Shawarma Platter",emoji:"🫔", cuisine:"mediterranean", time:40, cal:570, tags:["gluten-free"], grocery:["2 lbs chicken thighs boneless","2 tsp ground cumin","2 tsp paprika","1 tsp turmeric","1 tsp garlic powder","1 tsp cinnamon","1/2 tsp cayenne","3 tbsp olive oil","1 cup store-bought hummus","2 tomatoes diced","1 cucumber diced","1 red onion diced","1 cup bulgur wheat","fresh parsley","fresh mint","2 lemons","pita bread"] },
+        { id:"d12", name:"Birria Beef Tacos",       emoji:"🌮", cuisine:"mexican",      time:180,cal:680, tags:["gluten-free"], grocery:["3 lbs beef chuck roast","4 dried guajillo chilies stemmed & seeded","2 dried ancho chilies","1 can (14oz) diced tomatoes","1 large onion halved","4 cloves garlic","1 tsp ground cumin","1 tsp dried oregano","1 cinnamon stick","3 cups beef broth","corn tortillas","1 white onion finely diced","fresh cilantro","3 limes","radishes sliced","shredded Oaxacan cheese"] },
+        { id:"d13", name:"Chile Verde Pork",        emoji:"🫕", cuisine:"mexican",      time:90, cal:560, tags:["gluten-free"], grocery:["2 lbs pork shoulder cubed","1 lb tomatillos husked and quartered","4 Hatch green chiles roasted & peeled","1 onion diced","4 cloves garlic","2 potatoes cubed","2 cups chicken broth","1 tsp ground cumin","1 tsp dried oregano","2 tbsp vegetable oil","flour tortillas","2 cups Mexican rice","1 can refried beans","fresh cilantro","lime wedges"] },
+        { id:"d14", name:"Seafood Linguine",        emoji:"🦐", cuisine:"italian",      time:35, cal:590, tags:[], grocery:["1 lb linguine pasta","1/2 lb large shrimp peeled","1/2 lb sea scallops","1 lb littleneck clams scrubbed","1 can (14oz) diced tomatoes","6 cloves garlic sliced","1/2 cup dry white wine","1/4 cup extra virgin olive oil","red pepper flakes","fresh flat-leaf parsley","1 lemon","salt & pepper","crusty Italian bread"] },
+        { id:"d15", name:"Osso Buco",               emoji:"🍖", cuisine:"italian",      time:150,cal:740, tags:[], grocery:["4 veal shanks cross-cut 1.5 inch thick","1 can (14oz) crushed tomatoes","2 carrots finely diced","3 celery stalks finely diced","1 onion finely diced","4 cloves garlic","1 cup dry white wine","2 cups chicken broth","2 tbsp tomato paste","all-purpose flour for dredging","2 tbsp olive oil","2 cups Arborio rice","saffron threads","Parmesan for risotto","fresh parsley & lemon zest for gremolata"] },
+        { id:"d16", name:"General Tso's Chicken",   emoji:"🍗", cuisine:"asian",        time:40, cal:620, tags:[], grocery:["2 lbs boneless chicken thighs cubed","1/3 cup soy sauce","3 tbsp hoisin sauce","2 tbsp rice wine vinegar","3 tbsp granulated sugar","1 tbsp sesame oil","4 cloves garlic","1 tbsp fresh ginger grated","dried red chilies","cornstarch for coating","vegetable oil for frying","3 cups broccoli florets","2 cups cooked jasmine rice","frozen egg rolls"] },
+        { id:"d17", name:"Miso Glazed Salmon",      emoji:"🐟", cuisine:"asian",        time:25, cal:520, tags:["gluten-free"], grocery:["4 salmon fillets skin-on","3 tbsp white miso paste","2 tbsp honey","1 tbsp soy sauce","1 tbsp rice wine vinegar","2 heads baby bok choy halved","1 cup frozen edamame thawed","4 scallions sliced","1 inch fresh ginger grated","sesame seeds for garnish","2 cups cooked jasmine rice","miso soup packets"] },
+        { id:"d18", name:"Thai Green Curry",        emoji:"🍛", cuisine:"asian",        time:35, cal:540, tags:["gluten-free"], grocery:["1.5 lbs chicken thighs sliced","1/2 lb large shrimp peeled","2 cans (14oz) coconut milk","3 tbsp green curry paste","1 zucchini sliced","1 red bell pepper sliced","1 can bamboo shoots drained","fresh Thai basil leaves","3 kaffir lime leaves","2 tbsp fish sauce","1 tbsp granulated sugar","1 lime","2 cups jasmine rice"] },
+        { id:"d19", name:"Lamb Rogan Josh",         emoji:"🍲", cuisine:"indian",       time:90, cal:660, tags:["gluten-free"], grocery:["2 lbs lamb shoulder cubed","1 cup plain full-fat yogurt","2 large onions diced","1 can (14oz) crushed tomatoes","5 cloves garlic","2 inch fresh ginger","2 tsp Kashmiri red chili powder","1 tsp ground cumin","1 tsp ground coriander","1 tsp garam masala","1/2 tsp turmeric","4 green cardamom pods","2 tbsp ghee","fresh cilantro","2 cups basmati rice","naan bread","1 cup plain yogurt & 1 cucumber for raita"] },
+        { id:"d20", name:"Palak Paneer",            emoji:"🥬", cuisine:"indian",       time:40, cal:440, tags:["vegetarian","gluten-free"], grocery:["1 lb paneer cubed","4 cups fresh spinach","1 onion diced","1 can (14oz) crushed tomatoes","4 cloves garlic minced","1 inch fresh ginger grated","2 tbsp ghee","1 tsp cumin seeds","1 tsp garam masala","1/2 tsp turmeric","1/2 cup heavy cream","2 cups basmati rice","naan bread","salt & pepper to taste"] },
+      ]
+    };
+
+    const CUISINE_OPTIONS = [
+      { id:"american",     label:"🍔 American" },
+      { id:"soul",         label:"🍗 Soul Food" },
+      { id:"caribbean",    label:"🌴 Caribbean" },
+      { id:"mediterranean",label:"🫒 Mediterranean" },
+      { id:"mexican",      label:"🌮 Mexican" },
+      { id:"italian",      label:"🍝 Italian" },
+      { id:"asian",        label:"🍜 Asian" },
+      { id:"indian",       label:"🍛 Indian" },
+    ];
+    const DIET_OPTIONS = [
+      { id:"vegan",        label:"🌱 Vegan" },
+      { id:"vegetarian",   label:"🥗 Vegetarian" },
+      { id:"gluten-free",  label:"🌾 Gluten-Free" },
+      { id:"dairy-free",   label:"🥛 Dairy-Free" },
+      { id:"keto",         label:"🥩 Keto" },
+    ];
+
+    const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const FULL_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+    const MEAL_TYPES = ["breakfast","lunch","dinner"];
+    const MEAL_COLORS  = { breakfast:"#FFE66D", lunch:"#4ECDC4", dinner:"#FF6B35" };
+    const MEAL_BG = { breakfast:"rgba(255,230,109,0.13)", lunch:"rgba(78,205,196,0.13)", dinner:"rgba(255,107,53,0.13)" };
+    const MEAL_ICONS = { breakfast:"☀️", lunch:"🌤️", dinner:"🌙" };
+
+    function ytLink(name) {
+      return `https://www.youtube.com/results?search_query=${encodeURIComponent("how to make "+name+" recipe step by step")}`;
+    }
+    function pickMeal(type, cuisines, diets) {
+      let pool = MEAL_DB[type];
+      if (cuisines.length) pool = pool.filter(m => cuisines.includes(m.cuisine));
+      if (diets.length)    pool = pool.filter(m => diets.every(d => m.tags.includes(d)));
+      if (!pool.length)    pool = MEAL_DB[type];
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    function buildPlan(cuisines, diets) {
+      return DAYS.reduce((p, d) => {
+        p[d] = { breakfast: pickMeal("breakfast",cuisines,diets), lunch: pickMeal("lunch",cuisines,diets), dinner: pickMeal("dinner",cuisines,diets) };
+        return p;
+      }, {});
+    }
+    function buildGrocery(plan) {
+      const g = {};
+      Object.entries(plan).forEach(([day, meals]) =>
+        Object.entries(meals).forEach(([type, meal]) => {
+          if (!g[meal.name]) g[meal.name] = { items: meal.grocery, type, day };
+        })
+      );
+      return g;
+    }
+
+    // ─── STYLES ─────────────────────────────────────────────────────────────────
+    const S = {
+      app:{fontFamily:"'Nunito',sans-serif",background:"#FFF8F0",color:"#1A1A2E",minHeight:"100vh",maxWidth:430,margin:"0 auto",position:"relative",overflowX:"hidden"},
+      screen:{paddingBottom:100},
+      statusBar:{padding:"12px 20px 0",display:"flex",justifyContent:"space-between",fontSize:11,color:"#8A8A9A",fontWeight:600},
+      header:{padding:"16px 20px 8px",display:"flex",alignItems:"center",justifyContent:"space-between"},
+      logoIcon:{width:38,height:38,background:"linear-gradient(135deg,#FF6B35,#FF8C5A)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:"0 3px 12px rgba(255,107,53,0.35)"},
+      logoText:{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:800,marginLeft:9},
+      hero:{padding:"8px 20px 16px"},
+      heroGreet:{color:"#8A8A9A",fontSize:14,fontWeight:600,marginBottom:3},
+      heroTitle:{fontFamily:"'Playfair Display',serif",fontSize:25,fontWeight:800,lineHeight:1.25},
+      statsStrip:{display:"flex",gap:10,padding:"0 20px 18px"},
+      statCard:{flex:1,background:"#fff",border:"1.5px solid #EEE8E0",borderRadius:16,padding:"11px 8px",textAlign:"center",boxShadow:"0 4px 20px rgba(255,107,53,0.08)"},
+      statVal:{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:700},
+      statLbl:{fontSize:10,color:"#8A8A9A",fontWeight:700,marginTop:1},
+      secHd:{padding:"0 20px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:11},
+      secTitle:{fontSize:17,fontWeight:800},
+      secLink:{fontSize:12,color:"#FF6B35",fontWeight:700,cursor:"pointer"},
+      dayTabsWrap:{display:"flex",gap:8,padding:"0 20px 18px",overflowX:"auto",scrollbarWidth:"none"},
+      dayTab:{flexShrink:0,padding:"8px 15px",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer",border:"1.5px solid #EEE8E0",background:"#fff",color:"#8A8A9A",transition:"all .2s"},
+      dayTabActive:{background:"#FF6B35",borderColor:"#FF6B35",color:"#fff",boxShadow:"0 3px 12px rgba(255,107,53,0.3)"},
+      cardsWrap:{padding:"0 20px",display:"flex",flexDirection:"column",gap:11},
+      card:{background:"#fff",border:"1.5px solid #EEE8E0",borderRadius:20,overflow:"hidden",boxShadow:"0 4px 20px rgba(255,107,53,0.08)",cursor:"pointer"},
+      cardTop:{display:"flex",alignItems:"center",gap:13,padding:"14px 14px 0"},
+      emojiBox:{width:54,height:54,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0},
+      cardBody:{flex:1},
+      typeBadge:{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:10,fontSize:10,fontWeight:800,letterSpacing:".5px",textTransform:"uppercase",marginBottom:5},
+      mealName:{fontSize:16,fontWeight:800,lineHeight:1.2,marginBottom:4},
+      metas:{display:"flex",gap:10},
+      meta:{fontSize:11,color:"#8A8A9A",fontWeight:600},
+      dietTags:{display:"flex",flexWrap:"wrap",gap:5,padding:"6px 14px 10px"},
+      dietTag:{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"rgba(39,174,96,0.1)",color:"#27AE60"},
+      cardActions:{display:"flex",gap:8,padding:"10px 14px 13px"},
+      actBtn:{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontFamily:"'Nunito',sans-serif",fontSize:11,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4},
+      surpriseBtn:{margin:"16px 20px 0",background:"linear-gradient(135deg,#FF6B35,#FF8C5A)",border:"none",borderRadius:18,padding:16,color:"#fff",fontFamily:"'Nunito',sans-serif",fontSize:15,fontWeight:800,cursor:"pointer",width:"calc(100% - 40px)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 18px rgba(255,107,53,0.35)"},
+      bottomNav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(255,248,240,0.97)",backdropFilter:"blur(20px)",borderTop:"1.5px solid #EEE8E0",padding:"10px 0 20px",display:"flex",justifyContent:"space-around",zIndex:100},
+      navItem:{display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",padding:"4px 14px"},
+      navIcon:{fontSize:22},
+      navLabel:{fontSize:10,color:"#8A8A9A",fontWeight:700},
+      // onboard
+      obWrap:{padding:"22px 20px 100px"},
+      obTop:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:28},
+      stepBar:{height:5,background:"#EEE8E0",borderRadius:3,flex:1,margin:"0 10px",overflow:"hidden"},
+      stepFill:{height:"100%",background:"#FF6B35",borderRadius:3,transition:"width .4s ease"},
+      obTitle:{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:800,marginBottom:7,lineHeight:1.2},
+      obSub:{color:"#8A8A9A",fontSize:14,fontWeight:600,marginBottom:24},
+      chipGrid:{display:"flex",flexWrap:"wrap",gap:9,marginBottom:24},
+      chip:{padding:"10px 15px",borderRadius:20,border:"2px solid #EEE8E0",background:"#fff",color:"#1A1A2E",fontFamily:"'Nunito',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"},
+      chipSel:{borderColor:"#FF6B35",background:"rgba(255,107,53,0.1)",color:"#FF6B35"},
+      textarea:{width:"100%",background:"#fff",border:"2px solid #EEE8E0",borderRadius:14,padding:"13px 16px",color:"#1A1A2E",fontSize:14,outline:"none",marginBottom:12,fontFamily:"'Nunito',sans-serif",resize:"none"},
+      rangeRow:{display:"flex",justifyContent:"space-between",marginBottom:7,fontSize:13,fontWeight:700},
+      primaryBtn:{width:"100%",background:"#FF6B35",border:"none",borderRadius:16,padding:16,color:"#fff",fontFamily:"'Nunito',sans-serif",fontSize:16,fontWeight:800,cursor:"pointer",marginTop:8,boxShadow:"0 4px 16px rgba(255,107,53,0.3)"},
+      backBtn:{background:"none",border:"none",color:"#8A8A9A",fontFamily:"'Nunito',sans-serif",width:"100%",marginTop:12,cursor:"pointer",fontSize:13,fontWeight:700},
+      famPill:{display:"flex",alignItems:"center",gap:10,background:"#fff",border:"2px solid #EEE8E0",borderRadius:16,padding:"14px 16px",marginBottom:12,cursor:"pointer"},
+      famPillActive:{borderColor:"#FF6B35",background:"rgba(255,107,53,0.07)"},
+      famPillCheck:{width:22,height:22,borderRadius:7,border:"2px solid #EEE8E0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12},
+      famPillCheckActive:{background:"#FF6B35",borderColor:"#FF6B35",color:"#fff"},
+      // grocery
+      grocHdr:{padding:"20px 20px 14px",background:"linear-gradient(135deg,rgba(39,174,96,0.1),transparent)"},
+      grocTitle:{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:800},
+      grocSub:{color:"#8A8A9A",fontSize:13,fontWeight:600,marginTop:3},
+      grocTabs:{display:"flex",gap:8,padding:"0 20px 12px",overflowX:"auto",scrollbarWidth:"none"},
+      grocTab:{flexShrink:0,padding:"7px 14px",borderRadius:16,fontSize:12,fontWeight:700,cursor:"pointer",border:"1.5px solid #EEE8E0",background:"#fff",color:"#8A8A9A"},
+      grocTabActive:{background:"#27AE60",borderColor:"#27AE60",color:"#fff"},
+      grocSection:{padding:"0 20px"},
+      mealSecHd:{display:"flex",alignItems:"center",gap:8,margin:"16px 0 10px"},
+      grocItem:{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 0",borderBottom:"1px solid #EEE8E0",cursor:"pointer"},
+      gcheck:{width:21,height:21,borderRadius:7,border:"2px solid #EEE8E0",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1},
+      gcheckDone:{background:"#4ECDC4",borderColor:"#4ECDC4"},
+      delivBtn:{margin:"14px 20px",background:"#fff",border:"2px solid #4ECDC4",borderRadius:15,padding:14,color:"#4ECDC4",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8},
+      // profile
+      profHero:{padding:"28px 20px",textAlign:"center",background:"linear-gradient(180deg,rgba(255,107,53,0.1) 0%,transparent 100%)"},
+      profAv:{width:78,height:78,background:"linear-gradient(135deg,#FF6B35,#FF8C5A)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,margin:"0 auto 11px",boxShadow:"0 4px 18px rgba(255,107,53,0.3)"},
+      prefRow:{padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid #EEE8E0",cursor:"pointer"},
+      // modal
+      overlay:{position:"fixed",inset:0,background:"rgba(26,26,46,0.65)",zIndex:200,display:"flex",alignItems:"flex-end"},
+      sheet:{background:"#FFF8F0",borderRadius:"28px 28px 0 0",padding:"0 0 100px",maxHeight:"85vh",overflowY:"auto",width:"100%"},
+      handle:{width:40,height:5,background:"#EEE8E0",borderRadius:3,margin:"14px auto 0"},
+      mstat:{flex:1,background:"#fff",border:"1.5px solid #EEE8E0",borderRadius:14,padding:11,textAlign:"center"},
+      ingItem:{display:"flex",alignItems:"center",gap:10,padding:"8px 20px",borderBottom:"1px solid #EEE8E0"},
+      ingDot:{width:7,height:7,borderRadius:"50%",background:"#FF6B35",flexShrink:0},
+      watchBtn:{margin:"16px 20px 0",background:"#FF0000",border:"none",borderRadius:15,padding:15,color:"#fff",fontFamily:"'Nunito',sans-serif",fontSize:15,fontWeight:800,cursor:"pointer",width:"calc(100% - 40px)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 3px 14px rgba(255,0,0,0.25)"},
+      // toast
+      toast:{position:"fixed",bottom:115,left:"50%",transform:"translateX(-50%)",background:"#1A1A2E",color:"#fff",padding:"11px 22px",borderRadius:22,fontWeight:700,fontSize:13,zIndex:300,whiteSpace:"nowrap"},
+      // loader
+      loaderOverlay:{position:"fixed",inset:0,background:"rgba(255,248,240,0.96)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:400,gap:18},
+      spinner:{width:64,height:64,border:"4px solid #EEE8E0",borderTopColor:"#FF6B35",borderRadius:"50%"},
+    };
+
+    // ─── MAIN APP ───────────────────────────────────────────────────────────────
+    function App() {
+      const [tab,     setTab]     = useState("onboard");
+      const [obStep,  setObStep]  = useState(0);
+      const [diets,   setDiets]   = useState([]);
+      const [cuisines,setCuisines]= useState([]);
+      const [servings,setServings]= useState(4);
+      const [ingr,    setIngr]    = useState("");
+      const [budget,  setBudget]  = useState(120);
+      const [tmax,    setTmax]    = useState(45);
+      const [family,  setFamily]  = useState(false);
+      const [plan,    setPlan]    = useState(null);
+      const [day,     setDay]     = useState("Mon");
+      const [calDay,  setCalDay]  = useState(0);
+      const [grocery, setGrocery] = useState({});
+      const [checked, setChecked] = useState({});
+      const [gTab,    setGTab]    = useState("all");
+      const [toast,   setToast]   = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [selMeal, setSelMeal] = useState(null);
+      const [saved,   setSaved]   = useState([]);
+
+      function showToast(m){ setToast(m); setTimeout(()=>setToast(null),2100); }
+
+      function doGen(){
+        setLoading(true);
+        setTimeout(()=>{
+          const p=buildPlan(cuisines,diets);
+          setPlan(p); setGrocery(buildGrocery(p));
+          setLoading(false); setTab("home");
+        },2000);
+      }
+
+      function swap(type,d){
+        const m=pickMeal(type,cuisines,diets);
+        setPlan(prev=>{
+          const u={...prev,[d]:{...prev[d],[type]:m}};
+          setGrocery(buildGrocery(u)); return u;
+        });
+        showToast("Meal swapped! ✨");
+      }
+
+      function toggleSave(meal){
+        const already=saved.some(m=>m.id===meal.id);
+        setSaved(p=>already?p.filter(m=>m.id!==meal.id):[...p,meal]);
+        showToast(already?"Removed from favorites":"Saved ❤️");
+      }
+
+      const totalCal = plan&&day ? Object.values(plan[day]).reduce((s,m)=>s+m.cal,0) : 0;
+      const checkedCount = Object.values(checked).filter(Boolean).length;
+      const totalItems = Object.values(grocery).reduce((s,g)=>s+g.items.length,0);
+
+      // ── ONBOARDING ──────────────────────────────────────────────────────────
+      if(tab==="onboard"){
+        const steps=[
+          { title:<><span style={{color:"#FF6B35"}}>Dietary</span> needs</>,
+            sub:"We'll filter every meal to match your lifestyle.",
+            body:<div style={S.chipGrid}>
+              {DIET_OPTIONS.map(d=>(
+                <button key={d.id} style={{...S.chip,...(diets.includes(d.id)?S.chipSel:{})}}
+                  onClick={()=>setDiets(p=>p.includes(d.id)?p.filter(x=>x!==d.id):[...p,d.id])}>{d.label}</button>
+              ))}
+              <button style={{...S.chip,...(diets.length===0?S.chipSel:{})}} onClick={()=>setDiets([])}>🍽️ No restrictions</button>
+            </div>
+          },
+          { title:<><span style={{color:"#FF6B35"}}>Favorite</span> cuisines</>,
+            sub:"Pick every culture you love to eat. Mix & match!",
+            body:<div style={S.chipGrid}>
+              {CUISINE_OPTIONS.map(c=>(
+                <button key={c.id} style={{...S.chip,...(cuisines.includes(c.id)?S.chipSel:{})}}
+                  onClick={()=>setCuisines(p=>p.includes(c.id)?p.filter(x=>x!==c.id):[...p,c.id])}>{c.label}</button>
+              ))}
+            </div>
+          },
+          { title:<>Cooking for <span style={{color:"#FF6B35"}}>family?</span></>,
+            sub:"We'll scale portions to fit your household.",
+            body:<>
+              {[
+                {icon:"👩", label:"Just Me",       sub:"1 person · quick meals",            val:1,fm:false},
+                {icon:"👫", label:"Couple",         sub:"2 people · easy weeknight dinners", val:2,fm:false},
+                {icon:"👨‍👩‍👧", label:"Small Family",  sub:"3–4 people · family-friendly",      val:4,fm:true},
+                {icon:"👨‍👩‍👧‍👦", label:"Big Family",    sub:"5–6 people · big batch cooking",    val:6,fm:true},
+              ].map(o=>(
+                <div key={o.val} style={{...S.famPill,...(servings===o.val?S.famPillActive:{})}}
+                  onClick={()=>{setServings(o.val);setFamily(o.fm);}}>
+                  <span style={{fontSize:24}}>{o.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:800,fontSize:14}}>{o.label}</div>
+                    <div style={{fontSize:12,color:"#8A8A9A",fontWeight:600}}>{o.sub}</div>
+                  </div>
+                  <div style={{...S.famPillCheck,...(servings===o.val?S.famPillCheckActive:{})}}>
+                    {servings===o.val?"✓":""}
+                  </div>
+                </div>
+              ))}
+            </>
+          },
+          { title:<>What's in your <span style={{color:"#FF6B35"}}>fridge?</span></>,
+            sub:"We'll incorporate what you already have at home.",
+            body:<textarea style={S.textarea} rows={4}
+              placeholder="e.g. chicken, rice, onions, garlic, canned tomatoes..."
+              value={ingr} onChange={e=>setIngr(e.target.value)} />
+          },
+          { title:<>Time &amp; <span style={{color:"#FF6B35"}}>budget</span></>,
+            sub:"We'll never suggest meals outside your limits.",
+            body:<>
+              <div style={{marginBottom:20}}>
+                <div style={{...S.rangeRow}}><span>⏱️ Max cook time per meal</span><span style={{color:"#FF6B35"}}>{tmax} min</span></div>
+                <input type="range" min={10} max={120} step={5} value={tmax}
+                  onChange={e=>setTmax(+e.target.value)} style={{width:"100%",accentColor:"#FF6B35"}} />
+              </div>
+              <div style={{marginBottom:20}}>
+                <div style={{...S.rangeRow}}><span>💰 Weekly grocery budget</span><span style={{color:"#FF6B35"}}>${budget}</span></div>
+                <input type="range" min={50} max={400} step={10} value={budget}
+                  onChange={e=>setBudget(+e.target.value)} style={{width:"100%",accentColor:"#FF6B35"}} />
+              </div>
+            </>
+          },
+        ];
+
+        const s=steps[obStep], isLast=obStep===steps.length-1, pct=((obStep+1)/steps.length)*100;
+        return (
+          <div style={S.app}>
+            {loading&&<Loader/>}
+            <div style={S.statusBar}><span>9:41</span><span>●●●</span></div>
+            <div style={S.obWrap}>
+              <div style={S.obTop}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={S.logoIcon}>🍽️</div>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:18}}>MealMind</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8,flex:1,margin:"0 12px"}}>
+                  <div style={S.stepBar}><div style={{...S.stepFill,width:`${pct}%`}}/></div>
+                  <span style={{fontSize:11,color:"#8A8A9A",fontWeight:700,whiteSpace:"nowrap"}}>{obStep+1}/{steps.length}</span>
+                </div>
+                <button style={{background:"none",border:"none",color:"#8A8A9A",fontFamily:"'Nunito',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={doGen}>Skip</button>
+              </div>
+              <div style={S.obTitle}>{s.title}</div>
+              <div style={S.obSub}>{s.sub}</div>
+              {s.body}
+              <button style={S.primaryBtn} onClick={()=>isLast?doGen():setObStep(p=>p+1)}>
+                {isLast?"✨ Generate My Meal Plan!":"Continue →"}
+              </button>
+              {obStep>0&&<button style={S.backBtn} onClick={()=>setObStep(p=>p-1)}>← Back</button>}
+            </div>
+          </div>
+        );
+      }
+
+      // ── MAIN SCREENS ────────────────────────────────────────────────────────
+      return (
+        <div style={S.app}>
+          {loading&&<Loader/>}
+          {toast&&<div style={S.toast}>{toast}</div>}
+          {selMeal&&<MealModal meal={selMeal} onClose={()=>setSelMeal(null)}
+            onSave={toggleSave} isSaved={saved.some(m=>m.id===selMeal.id)} servings={servings}/>}
+
+          <div style={S.statusBar}><span>9:41</span><span>●●●</span></div>
+
+          {/* HOME */}
+          {tab==="home"&&(
+            <div style={S.screen}>
+              <div style={S.header}>
+                <div style={{display:"flex",alignItems:"center"}}>
+                  <div style={S.logoIcon}>🍽️</div>
+                  <span style={{...S.logoText}}>MealMind</span>
+                </div>
+                <div style={{width:38,height:38,background:"#fff",border:"1.5px solid #EEE8E0",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,cursor:"pointer"}}>🔔</div>
+              </div>
+              <div style={S.hero}>
+                <div style={S.heroGreet}>Good morning, {family?"Super Mom! 👩‍👧‍👦":"Chef! 👋"}</div>
+                <div style={S.heroTitle}>Let's plan <span style={{color:"#FF6B35"}}>delicious</span> meals this week</div>
+              </div>
+              <div style={S.statsStrip}>
+                {[["21","Meals Planned","#FF6B35"],[totalCal.toLocaleString(),"Today's Cal","#27AE60"],[`x${servings}`,"Servings","#F5A623"]].map(([v,l,c])=>(
+                  <div key={l} style={S.statCard}><div style={{...S.statVal,color:c}}>{v}</div><div style={S.statLbl}>{l}</div></div>
+                ))}
+              </div>
+              <div style={S.secHd}>
+                <div style={S.secTitle}>📅 This Week</div>
+                <div style={S.secLink} onClick={()=>setTab("calendar")}>Full View →</div>
+              </div>
+              <div style={S.dayTabsWrap}>
+                {DAYS.map(d=>(
+                  <button key={d} style={{...S.dayTab,...(day===d?S.dayTabActive:{})}} onClick={()=>setDay(d)}>{d}</button>
+                ))}
+              </div>
+              {plan&&(
+                <div style={S.cardsWrap}>
+                  {MEAL_TYPES.map(type=>{
+                    const meal=plan[day][type];
+                    const isSaved=saved.some(m=>m.id===meal.id);
+                    return(
+                      <div key={type} style={S.card} onClick={()=>setSelMeal(meal)}>
+                        <div style={S.cardTop}>
+                          <div style={{...S.emojiBox,background:MEAL_BG[type]}}>{meal.emoji}</div>
+                          <div style={S.cardBody}>
+                            <div style={{...S.typeBadge,background:MEAL_BG[type],color:MEAL_COLORS[type]}}>
+                              {MEAL_ICONS[type]} {type}
+                            </div>
+                            <div style={S.mealName}>{meal.name}</div>
+                            <div style={S.metas}>
+                              <span style={S.meta}>⏱ <strong>{meal.time}m</strong></span>
+                              <span style={S.meta}>🔥 <strong>{meal.cal} cal</strong></span>
+                              <span style={S.meta}>👥 <strong>x{servings}</strong></span>
+                            </div>
+                          </div>
+                        </div>
+                        {meal.tags.length>0&&(
+                          <div style={S.dietTags}>{meal.tags.map(t=><span key={t} style={S.dietTag}>✓ {t}</span>)}</div>
+                        )}
+                        <div style={S.cardActions} onClick={e=>e.stopPropagation()}>
+                          <button style={{...S.actBtn,background:"#FF0000",color:"#fff"}}
+                            onClick={()=>window.open(ytLink(meal.name),"_blank")}>▶ Watch How to Cook</button>
+                          <button style={{...S.actBtn,background:"#FFF8F0",color:"#1A1A2E",border:"1.5px solid #EEE8E0"}}
+                            onClick={()=>swap(type,day)}>🔄 Swap</button>
+                          <button style={{...S.actBtn,background:"#FFF8F0",color:"#FF6B35",border:"1.5px solid #EEE8E0"}}
+                            onClick={()=>toggleSave(meal)}>{isSaved?"❤️":"🤍"}</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <button style={S.surpriseBtn} onClick={()=>{
+                setLoading(true);
+                setTimeout(()=>{const p=buildPlan(cuisines,diets);setPlan(p);setGrocery(buildGrocery(p));setLoading(false);showToast("New plan generated! 🎉");},1500);
+              }}>🎲 Surprise Me! Regenerate Whole Plan</button>
+            </div>
+          )}
+
+          {/* CALENDAR */}
+          {tab==="calendar"&&(
+            <div style={S.screen}>
+              <div style={S.header}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:800}}>📅 Weekly Calendar</div>
+                <button style={{background:"none",border:"none",color:"#FF6B35",fontFamily:"'Nunito',sans-serif",fontWeight:800,fontSize:13,cursor:"pointer"}}
+                  onClick={()=>{setLoading(true);setTimeout(()=>{const p=buildPlan(cuisines,diets);setPlan(p);setGrocery(buildGrocery(p));setLoading(false);showToast("Plan regenerated! 🎉");},1500);}}>
+                  🔄 Regenerate
+                </button>
+              </div>
+              <div style={{padding:"0 20px"}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:5,marginBottom:16}}>
+                  {DAYS.map((d,i)=>(
+                    <div key={d} style={{textAlign:"center"}}>
+                      <div style={{fontSize:9,color:"#8A8A9A",fontWeight:800,textTransform:"uppercase",marginBottom:5}}>{d}</div>
+                      <div style={{width:34,height:34,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,margin:"0 auto",cursor:"pointer",background:calDay===i?"#FF6B35":"#fff",color:calDay===i?"#fff":"#1A1A2E",border:`1.5px solid ${calDay===i?"#FF6B35":"#EEE8E0"}`}}
+                        onClick={()=>{setCalDay(i);setDay(d);}}>
+                        {7+i}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:16,marginBottom:13}}>
+                  {FULL_DAYS[calDay]}, April {7+calDay}
+                </div>
+                {plan&&MEAL_TYPES.map(type=>{
+                  const meal=plan[DAYS[calDay]][type];
+                  return(
+                    <div key={type} style={{display:"flex",alignItems:"center",gap:11,background:"#fff",border:"1.5px solid #EEE8E0",borderRadius:15,padding:"11px 13px",marginBottom:8,cursor:"pointer"}}
+                      onClick={()=>setSelMeal(meal)}>
+                      <div style={{fontSize:22}}>{meal.emoji}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:9,textTransform:"uppercase",letterSpacing:1,color:"#8A8A9A",fontWeight:800}}>{type}</div>
+                        <div style={{fontWeight:800,fontSize:14}}>{meal.name}</div>
+                      </div>
+                      <button style={{background:"#FF0000",color:"#fff",border:"none",borderRadius:9,padding:"6px 11px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}
+                        onClick={e=>{e.stopPropagation();window.open(ytLink(meal.name),"_blank");}}>▶ Watch</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* GROCERY */}
+          {tab==="grocery"&&(
+            <div style={S.screen}>
+              <div style={S.grocHdr}>
+                <div style={S.grocTitle}>🛒 Grocery List</div>
+                <div style={S.grocSub}>{totalItems} ingredients · {checkedCount} checked · est. ${Math.round(budget*0.8)}</div>
+              </div>
+              <button style={S.delivBtn} onClick={()=>showToast("Opening grocery delivery... 🚚")}>
+                🚚 Order via Grocery Delivery
+              </button>
+              <div style={S.grocTabs}>
+                <button style={{...S.grocTab,...(gTab==="all"?S.grocTabActive:{})}} onClick={()=>setGTab("all")}>All Meals</button>
+                {Object.keys(grocery).map(n=>(
+                  <button key={n} style={{...S.grocTab,...(gTab===n?S.grocTabActive:{})}} onClick={()=>setGTab(n)}>
+                    {n.split(" ").slice(0,2).join(" ")}
+                  </button>
+                ))}
+              </div>
+              <div style={S.grocSection}>
+                {Object.entries(grocery).filter(([n])=>gTab==="all"||gTab===n).map(([mealName,info])=>(
+                  <div key={mealName}>
+                    <div style={S.mealSecHd}>
+                      <span style={{fontSize:20}}>{info.type==="breakfast"?"☀️":info.type==="lunch"?"🌤️":"🌙"}</span>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:800}}>{mealName}</div>
+                        <div style={{fontSize:11,color:"#8A8A9A",fontWeight:600}}>{info.type} · {info.day} · {servings} servings</div>
+                      </div>
+                    </div>
+                    {info.items.map(item=>{
+                      const k=`${mealName}__${item}`;
+                      return(
+                        <div key={k} style={S.grocItem} onClick={()=>setChecked(p=>({...p,[k]:!p[k]}))}>
+                          <div style={{...S.gcheck,...(checked[k]?S.gcheckDone:{})}}>
+                            {checked[k]&&<span style={{fontSize:11,color:"#fff"}}>✓</span>}
+                          </div>
+                          <span style={{fontSize:13,fontWeight:600,textDecoration:checked[k]?"line-through":"none",color:checked[k]?"#8A8A9A":"#1A1A2E",lineHeight:1.4}}>{item}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* PROFILE */}
+          {tab==="profile"&&(
+            <div style={S.screen}>
+              <div style={S.profHero}>
+                <div style={S.profAv}>👩‍🍳</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:800}}>My Kitchen</div>
+                <div style={{color:"#8A8A9A",fontSize:13,fontWeight:600,marginTop:3}}>7-day streak 🔥 · {saved.length} saved · {servings} servings</div>
+              </div>
+              {[
+                {icon:"🥗",label:"Dietary Preferences",val:diets.length?diets.join(", "):"No restrictions"},
+                {icon:"🌍",label:"Favorite Cuisines",val:cuisines.length?cuisines.join(", "):"All cuisines"},
+                {icon:"👨‍👩‍👧",label:"Family Size",val:`${servings} ${servings===1?"person":"people"}${family?" · Family Mode ON":""}`},
+                {icon:"⏱️",label:"Max Cook Time",val:`${tmax} minutes per meal`},
+                {icon:"💰",label:"Weekly Budget",val:`$${budget}/week`},
+                {icon:"❤️",label:"Saved Meals",val:`${saved.length} meals`},
+                {icon:"🔔",label:"Meal Prep Reminders",val:"8:00 AM daily"},
+                {icon:"📊",label:"Nutrition Goal",val:`~${totalCal||2000} cal/day`},
+              ].map(r=>(
+                <div key={r.label} style={S.prefRow}>
+                  <span style={{fontSize:20,width:28,textAlign:"center"}}>{r.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:700}}>{r.label}</div>
+                    <div style={{fontSize:12,color:"#8A8A9A",fontWeight:600,marginTop:1}}>{r.val}</div>
+                  </div>
+                  <span style={{color:"#8A8A9A",fontSize:16}}>›</span>
+                </div>
+              ))}
+              <div style={{padding:"0 20px",marginTop:16}}>
+                <button style={S.primaryBtn} onClick={()=>{setTab("onboard");setObStep(0);}}>✏️ Update My Preferences</button>
+              </div>
+            </div>
+          )}
+
+          {/* BOTTOM NAV */}
+          <div style={S.bottomNav}>
+            {[["home","🏠","Home"],["calendar","📅","Plan"],["grocery","🛒","Grocery"],["profile","👩‍🍳","Profile"]].map(([id,icon,label])=>(
+              <div key={id} style={S.navItem} onClick={()=>setTab(id)}>
+                <span style={S.navIcon}>{icon}</span>
+                <span style={{...S.navLabel,color:tab===id?"#FF6B35":"#8A8A9A"}}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── MEAL MODAL ─────────────────────────────────────────────────────────────
+    function MealModal({meal,onClose,onSave,isSaved,servings}){
+      return(
+        <div style={S.overlay} onClick={onClose}>
+          <div style={S.sheet} onClick={e=>e.stopPropagation()}>
+            <div style={S.handle}/>
+            <div style={{textAlign:"center",padding:"18px 20px 0",fontSize:60}}>{meal.emoji}</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:800,textAlign:"center",padding:"8px 20px 0"}}>{meal.name}</div>
+            <div style={{display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,padding:"10px 20px 0"}}>
+              {meal.tags.map(t=>(
+                <span key={t} style={{fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:10,background:"rgba(255,107,53,0.1)",color:"#FF6B35"}}>{t}</span>
+              ))}
+              <span style={{fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:10,background:"rgba(52,152,219,0.1)",color:"#3498DB"}}>{meal.cuisine}</span>
+            </div>
+            <div style={{display:"flex",gap:10,padding:"14px 20px"}}>
+              {[["⏱️",`${meal.time}m`,"Cook Time"],["🔥",meal.cal,"Calories"],["👥",`x${servings}`,"Servings"]].map(([ico,v,l])=>(
+                <div key={l} style={S.mstat}>
+                  <div style={{fontSize:18,fontWeight:800,color:"#FF6B35"}}>{v}</div>
+                  <div style={{fontSize:10,color:"#8A8A9A",fontWeight:700,marginTop:2}}>{l}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{fontSize:16,fontWeight:800,padding:"16px 20px 8px"}}>🛒 Ingredients (for {servings} servings)</div>
+            {meal.grocery.map((item,i)=>(
+              <div key={i} style={S.ingItem}>
+                <div style={S.ingDot}/>
+                <span style={{fontSize:13,fontWeight:600}}>{item}</span>
+              </div>
+            ))}
+            <button style={S.watchBtn} onClick={()=>window.open(ytLink(meal.name),"_blank")}>
+              ▶ Watch How to Make {meal.name} on YouTube
+            </button>
+            <button style={{...S.watchBtn,background:"#FF6B35",boxShadow:"0 3px 14px rgba(255,107,53,0.3)",marginTop:8}}
+              onClick={()=>onSave(meal)}>
+              {isSaved?"❤️ Saved to Favorites":"🤍 Save to Favorites"}
+            </button>
+            <button style={{margin:"10px 20px 0",background:"#FFF8F0",border:"2px solid #EEE8E0",borderRadius:15,padding:13,color:"#1A1A2E",fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:800,cursor:"pointer",width:"calc(100% - 40px)"}}
+              onClick={onClose}>← Back to Meals</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── LOADER ─────────────────────────────────────────────────────────────────
+    function Loader(){
+      const msgs=["Picking your meals...","Matching your cuisines...","Building grocery list...","Almost ready! 🎉"];
+      const [msg,setMsg]=useState(msgs[0]);
+      useEffect(()=>{
+        let i=0; const t=setInterval(()=>{i=(i+1)%msgs.length;setMsg(msgs[i]);},600);
+        return()=>clearInterval(t);
+      },[]);
+
+      return(
+        <div style={S.loaderOverlay}>
+          <div style={{fontSize:52}}>🍽️</div>
+          <div style={{...S.spinner,animation:"spin 0.8s linear infinite"}}/>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:800,textAlign:"center"}}>{msg}</div>
+          <div style={{color:"#8A8A9A",fontSize:13,fontWeight:600,textAlign:"center"}}>Personalizing your family's<br/>perfect weekly meal plan</div>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      );
+    }
+
+    // ─── MOUNT ──────────────────────────────────────────────────────────────────
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App/>);
+  </script>
+</body>
+</html>
